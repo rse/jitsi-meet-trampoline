@@ -407,10 +407,6 @@
                 let options = {
                     parentNode: $(".jitsi .embedding").get(0),
                     roomName: config.room,
-                    /*
-                    width: 1280,
-                    height: 720,
-                    */
                     userInfo: {
                         email: "",
                         displayName: ""
@@ -482,24 +478,29 @@
                         }
                     }
                 })
-                const setVideoSize = (min, ideal, max) => {
+                const setVideoSize = (minW, idealW, maxW, minH, idealH, maxH) => {
+                    Object.assign(options, {
+                        width:  idealW,
+                        height: idealH
+                    })
                     Object.assign(options.configOverwrite, {
-                        resolution: ideal,
+                        resolution: idealH,
                         constraints: {
                             video: {
                                 aspectRatio: 16 / 9,
-                                height: { ideal: ideal, max: max, min: min }
+                                width:  { ideal: idealW, max: maxW, min: minW }
+                                height: { ideal: idealH, max: maxH, min: minH }
                             }
                         }
                     })
                 }
-                if      (config.video === "1080p") setVideoSize(720, 1080, 2160)
-                else if (config.video ===  "720p") setVideoSize(576,  720, 1080)
-                else if (config.video ===  "576p") setVideoSize(480,  576,  720)
-                else if (config.video ===  "480p") setVideoSize(360,  480,  576)
-                else if (config.video ===  "360p") setVideoSize(240,  360,  480)
-                else if (config.video ===  "240p") setVideoSize(144,  240,  360)
-                else if (config.video ===  "144p") setVideoSize(144,  144,  240)
+                if      (config.video === "1080p") setVideoSize(1280, 1920, 1920, 720, 1080, 1080)
+                else if (config.video ===  "720p") setVideoSize(1024, 1280, 1920, 576,  720, 1080)
+                else if (config.video ===  "576p") setVideoSize( 854, 1024, 1280, 480,  576,  720)
+                else if (config.video ===  "480p") setVideoSize( 640,  854, 1024, 360,  480,  576)
+                else if (config.video ===  "360p") setVideoSize( 426,  640,  854, 240,  360,  480)
+                else if (config.video ===  "240p") setVideoSize( 256,  426,  640, 144,  240,  360)
+                else if (config.video ===  "144p") setVideoSize( 256,  256,  426, 144,  144,  240)
                 const setVideoFPS = (min, ideal, max) => {
                     Object.assign(options.configOverwrite.constraints.video, {
                         framerate: { ideal: ideal, max: max, min: min }
@@ -575,7 +576,7 @@
                     })
                 }
 
-                const server = "meet.jit.si"
+                const server = "meet.jit.si" // FIXME
 
                 const api = new JitsiMeetExternalAPI(server, options)
 

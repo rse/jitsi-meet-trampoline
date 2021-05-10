@@ -272,7 +272,6 @@
                 <div class="field">
                     <select id="effect" class="select-effect">
                         <option value="none" selected="selected">none</option>
-                        <option value="mirror">horizontal mirror</option>
                         <option value="bokehblur">bokeh-blur (AI, CPU-intensive)</option>
                         <option value="greenscreen">green-screen (AI, CPU-intensive)</option>
                     </select>
@@ -333,7 +332,7 @@
             /*  update URLs on form changes  */
             let config = {}
             const updateURLs = () => {
-                /*  fetch information of form */
+                /*  fetch information of form  */
                 const room   = $("#room").val()
                 const pass   = $("#pass").val()
                 const mode   = $("#mode option:selected").val()
@@ -396,8 +395,6 @@
             const open = () => {
                 /*  config = { room, pass, mode, audio, video, fps, effect, peer, name }  */
                 // TODO: effect
-                // TODO: name
-                console.log("Configuration", config)
 
                 /*  toggle user interface  */
                 $(".trampoline").addClass("disabled")
@@ -412,7 +409,7 @@
                         displayName: ""
                     },
                     configOverwrite: {
-                        /* https://github.com/jitsi/jitsi-meet/blob/master/config.js */
+                        /*  https://github.com/jitsi/jitsi-meet/blob/master/config.js  */
                         hiddenDomain: "hidden.jitsi.local",
                         apiLogLevels: [ "error" ],
                         prejoinPageEnabled: false,
@@ -424,8 +421,9 @@
                         desktopSharingFrameRate: { min: 5, max: 5 },
                     },
                     interfaceConfigOverwrite: {
-                        /* https://github.com/jitsi/jitsi-meet/blob/master/interface_config.js */
+                        /*  https://github.com/jitsi/jitsi-meet/blob/master/interface_config.js  */
                         VIDEO_LAYOUT_FIT: "both",
+                        SHARING_FEATURES: [],
                         SHOW_CHROME_EXTENSION_BANNER: false,
                     }
                 }
@@ -488,7 +486,7 @@
                         constraints: {
                             video: {
                                 aspectRatio: 16 / 9,
-                                width:  { ideal: idealW, max: maxW, min: minW }
+                                width:  { ideal: idealW, max: maxW, min: minW },
                                 height: { ideal: idealH, max: maxH, min: minH }
                             }
                         }
@@ -512,35 +510,103 @@
                 else if (fps <= 60) setVideoFPS(30, fps, 60)
                 else                setVideoFPS(60, fps, fps)
 
-                /*  override configs */
+                /*  override configs for particular modes...  */
                 const username = config.peer.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-")
+                const realname = config.name.replace(/_/g, " ")
                 if (config.mode === "attendee") {
                     /*  ...for attendee (meeting)  */
                     options.userInfo.email = `${username}@jitsi.local`
-                    options.userInfo.displayName = config.peer
+                    options.userInfo.displayName = `${config.peer}: ${realname}`
+                    options.userInfo.displayName = `${config.peer}: ${realname}`
+                    Object.assign(options.configOverwrite, {
+                        toolbarButtons: [
+                            "microphone", "camera", "closedcaptions",
+                            "desktop", "embedmeeting", "fullscreen",
+                            "fodeviceselection", "hangup", "profile",
+                            "chat", "recording", "livestreaming",
+                            "etherpad", "sharedvideo", "settings",
+                            "raisehand", "videoquality", "filmstrip",
+                            "invite", "feedback", "stats", "shortcuts",
+                            "tileview", "select-background",
+                            "download", "help", "mute-everyone",
+                            "mute-video-everyone", "security"
+                        ],
+                    })
+                    Object.assign(options.interfaceConfigOverwrite, {
+                        SETTINGS_SECTIONS: [ "devices", "language", "moderator" ],
+                    })
                 }
                 else if (config.mode === "sender") {
                     /*  ...for sender (broadcast)  */
                     options.userInfo.email = `${username}@jitsi.local`
-                    options.userInfo.displayName = config.peer
+                    options.userInfo.displayName = `${config.peer}: ${realname}`
+                    Object.assign(options.configOverwrite, {
+                        toolbarButtons: [
+                            "microphone", "camera",
+                            "desktop", "fullscreen",
+                            "fodeviceselection", "hangup",
+                            "chat",
+                            "settings",
+                            "raisehand", "filmstrip",
+                            "feedback", "shortcuts",
+                            "tileview", "select-background",
+                            "help"
+                        ],
+                    })
+                    Object.assign(options.interfaceConfigOverwrite, {
+                        SETTINGS_SECTIONS: [ "devices", "language" ],
+                    })
                 }
                 else if (config.mode === "follower") {
                     /*  ...for follower (broadcast, no-video)  */
                     options.userInfo.email = `${username}@hidden.jitsi.local`
-                    options.userInfo.displayName = config.peer
+                    options.userInfo.displayName = `${config.peer}: ${realname}`
+                    Object.assign(options.configOverwrite, {
+                        toolbarButtons: [
+                            "microphone",
+                            "fullscreen",
+                            "fodeviceselection", "hangup",
+                            "chat",
+                            "settings",
+                            "filmstrip",
+                            "shortcuts",
+                            "tileview",
+                            "help"
+                        ],
+                    })
+                    Object.assign(options.interfaceConfigOverwrite, {
+                        SETTINGS_SECTIONS: [ "devices", "language" ],
+                    })
                     options.configOverwrite.constraints.video = false
                 }
                 else if (config.mode === "injector") {
                     /*  ...for injector (broadcast, no-video, no-audio)  */
                     options.userInfo.email = `${username}@hidden.jitsi.local`
-                    options.userInfo.displayName = config.peer
+                    options.userInfo.displayName = `${config.peer}: ${realname}`
+                    Object.assign(options.configOverwrite, {
+                        toolbarButtons: [
+                            "fullscreen",
+                            "hangup",
+                            "chat",
+                            "settings",
+                            "filmstrip",
+                            "shortcuts",
+                            "tileview",
+                            "help"
+                        ],
+                    })
+                    Object.assign(options.interfaceConfigOverwrite, {
+                        SETTINGS_SECTIONS: [ "devices", "language" ],
+                    })
                     options.configOverwrite.constraints.video = false
                     options.configOverwrite.constraints.audio = false
                 }
                 else if (config.mode === "receiver") {
-                    /*  ...for receiver (OBS Studio, Browser Source)  */
-                    options.userInfo.email = `${username}-receiver@hidden.jitsi.local`
-                    options.userInfo.displayName = `${config.peer} (receiver)`
+                    /*  ...for receiver (OBS Studio or Vingester)  */
+                    options.userInfo.email = `${username}-RECEIVER@hidden.jitsi.local`
+                    options.userInfo.displayName = `${config.peer}: RECEIVER`
+                    options.configOverwrite.constraints.video = false
+                    options.configOverwrite.constraints.audio = false
                     Object.assign(options.configOverwrite, {
                         hideLobbyButton: true,
                         enableInsecureRoomNameWarning: false,
@@ -572,45 +638,76 @@
                         DISABLE_PRESENCE_STATUS: true,
                         DISABLE_RINGING: true,
                         SHOW_BRAND_WATERMARK: false,
-                        VIDEO_QUALITY_LABEL_DISABLED: true
+                        SHOW_JITSI_WATERMARK: false,
+                        VIDEO_QUALITY_LABEL_DISABLED: true,
+                        SETTINGS_SECTIONS: []
                     })
                 }
 
                 const server = "meet.jit.si" // FIXME
 
+                /*  open the Jitsi Meet external API:
+                    https://jitsi.github.io/handbook/docs/dev-guide/dev-guide-iframe  */
                 const api = new JitsiMeetExternalAPI(server, options)
 
+                /*  handle subsequent login of participants  */
                 api.addEventListener("passwordRequired", () => {
                     api.executeCommand("password", config.pass)
                 })
+
+                /*  handle initial login of moderator  */
                 api.on("participantRoleChanged", (event) => {
                     if (event.role === "moderator")
                         api.executeCommand("password", config.pass)
                 })
 
-                /* https://jitsi.github.io/handbook/docs/dev-guide/dev-guide-iframe */
+                /*  pin participant for receiver mode  */
                 const pinParticipant = () => {
                     const P = api.getParticipantsInfo()
                     for (const p of P) {
-                        if (p.displayName === config.peer) {
+                        let id = p.displayName.replace(/:.*$/, "")
+                        if (id === config.peer) {
                             api.pinParticipant(p.participantId)
                             return true
                         }
                     }
                     return false
                 }
+
+                /*  handle conference join  */
+                let timer = null
+                let joined = false
                 api.addListener("videoConferenceJoined", (ev, data) => {
+                    joined = true
                     api.executeCommand("toggleFilmStrip")
-                    let ok = pinParticipant()
-                    if (!ok) {
-                        let timer = setInterval(() => {
-                            ok = pinParticipant()
-                            if (ok)
-                                clearTimeout(timer)
-                        }, 1000)
+                    if (config.mode === "receiver") {
+                        let ok = pinParticipant()
+                        if (!ok) {
+                            timer = setInterval(() => {
+                                ok = pinParticipant()
+                                if (ok) {
+                                    clearTimeout(timer)
+                                    timer = null
+                                }
+                            }, 1000)
+                        }
                     }
                 })
+
+                /*  handle conference leave  */
                 api.addListener("videoConferenceLeft", (ev) => {
+                    /*  account join status as Jitsi calls this event
+                        also once if initially a password is required  */
+                    if (!joined)
+                        return
+                    joined = false
+
+                    /*  clear join/pin timer  */
+                    if (timer !== null) {
+                        clearTimeout(timer)
+                        timer = null
+                    }
+
                     /*  toggle user interface  */
                     $(".trampoline").removeClass("disabled")
                     $(".jitsi").addClass("disabled")
